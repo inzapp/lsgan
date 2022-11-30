@@ -38,11 +38,8 @@ class Model:
         self.gan = None
         self.g_model = None
         self.d_model = None
-        self.latent_rows = generate_shape[0] // 8
-        self.latent_cols = generate_shape[1] // 8
-        self.latent_channels = 8192 // (self.latent_rows * self.latent_cols)
-        if self.latent_channels > 128:
-            self.latent_channels = 128
+        self.latent_rows = generate_shape[0] // 16
+        self.latent_cols = generate_shape[1] // 16
 
     def build(self):
         assert self.generate_shape[0] % 32 == 0 and self.generate_shape[1] % 32 == 0
@@ -59,29 +56,24 @@ class Model:
         g_input = tf.keras.layers.Input(shape=(self.latent_dim,))
         x = g_input
         x = self.dense(x, 1024, activation='leaky', bn=bn)
-        x = self.dense(x, 2048, activation='leaky', bn=bn)
-        x = self.dense(x, self.latent_rows * self.latent_cols * 128, activation='leaky', bn=bn)
-        x = self.reshape(x, (self.latent_rows, self.latent_cols, self.latent_channels))
-        x = self.conv2d_transpose(x, 128, 1, 1, activation='leaky', bn=bn)
+        x = self.dense(x, self.latent_rows * self.latent_cols * 256, activation='leaky', bn=bn)
+        x = self.reshape(x, (self.latent_rows, self.latent_cols, 256))
+        x = self.conv2d_transpose(x, 256, 3, 2, activation='leaky', bn=bn)
+        x = self.conv2d_transpose(x, 256, 3, 1, activation='leaky', bn=bn)
+        x = self.conv2d_transpose(x, 256, 3, 2, activation='leaky', bn=bn)
+        x = self.conv2d_transpose(x, 256, 3, 1, activation='leaky', bn=bn)
         x = self.conv2d_transpose(x, 128, 3, 2, activation='leaky', bn=bn)
-        x = self.conv2d_transpose(x, 128, 3, 1, activation='leaky', bn=bn)
         x = self.conv2d_transpose(x,  64, 3, 2, activation='leaky', bn=bn)
-        x = self.conv2d_transpose(x,  64, 3, 1, activation='leaky', bn=bn)
-        x = self.conv2d_transpose(x,  32, 3, 2, activation='leaky', bn=bn)
         g_output = self.conv2d_transpose(x, self.generate_shape[-1], 1, 1, activation='tanh', bn=False)
         return g_input, g_output
 
     def build_d(self, bn):
         d_input = tf.keras.layers.Input(shape=self.generate_shape)
         x = d_input
-        x = self.conv2d(x,  32, 3, 2, activation='leaky', bn=bn)
-        x = self.conv2d(x,  64, 3, 2, activation='leaky', bn=bn)
-        x = self.conv2d(x, 128, 3, 1, activation='leaky', bn=bn)
-        x = self.conv2d(x, 128, 3, 2, activation='leaky', bn=bn)
-        x = self.conv2d(x, 256, 3, 1, activation='leaky', bn=bn)
-        x = self.conv2d(x, 256, 3, 2, activation='leaky', bn=bn)
-        x = self.conv2d(x, 512, 3, 1, activation='leaky', bn=bn)
-        x = self.conv2d(x, 512, 3, 2, activation='leaky', bn=bn)
+        x = self.conv2d(x,  64, 5, 2, activation='leaky', bn=bn)
+        x = self.conv2d(x, 128, 5, 2, activation='leaky', bn=bn)
+        x = self.conv2d(x, 256, 5, 2, activation='leaky', bn=bn)
+        x = self.conv2d(x, 512, 5, 2, activation='leaky', bn=bn)
         x = self.flatten(x)
         d_output = self.dense(x, 1, activation='linear', bn=False)
         return d_input, d_output
