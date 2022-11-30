@@ -56,7 +56,7 @@ class DataGenerator:
             real_dx.append(x)
         real_dx = np.asarray(real_dx).astype(self.dtype)
         real_dy = np.ones((self.half_batch_size, 1), dtype=np.float32)
-        fake_dy = np.zeros((self.half_batch_size, 1), dtype=np.float32) + 0.5
+        fake_dy = np.zeros((self.half_batch_size, 1), dtype=np.float32)
         z = self.get_z_vector(size=self.half_batch_size * self.latent_dim).reshape((self.half_batch_size, self.latent_dim)).astype(self.dtype)
         fake_dx = np.asarray(LSGAN.graph_forward(model=self.generator, x=z)).reshape((self.half_batch_size,) + self.generate_shape).astype(self.dtype)
         dx = np.append(real_dx, fake_dx, axis=0)
