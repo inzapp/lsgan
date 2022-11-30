@@ -86,7 +86,7 @@ class LSGAN:
 
     def build_loss_str(self, iteration_count, d_loss, g_loss):
         loss_str = f'[iteration_count : {iteration_count:6d}]'
-        loss_str += f', d_loss: {d_loss:>8.4f}'
+        loss_str += f' d_loss: {d_loss:>8.4f}'
         loss_str += f', g_loss: {g_loss:>8.4f}'
         return loss_str
 
