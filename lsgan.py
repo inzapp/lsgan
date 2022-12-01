@@ -46,7 +46,7 @@ class LSGAN:
                  save_interval=2000,
                  iterations=100000,
                  view_grid_size=4,
-                 discriminator_weight=0.2,
+                 d_loss_ignore_threshold=0.1,
                  checkpoint_path='checkpoint',
                  training_view=False):
         assert generate_shape[2] in [1, 3]
@@ -58,7 +58,7 @@ class LSGAN:
         self.iterations = iterations
         self.view_grid_size = view_grid_size
         self.training_view = training_view
-        self.discriminator_weight = discriminator_weight
+        self.d_loss_ignore_threshold = d_loss_ignore_threshold
         self.checkpoint_path = checkpoint_path
         self.live_view_previous_time = time()
 
@@ -76,10 +76,12 @@ class LSGAN:
     def init_image_paths(self, image_path):
         return glob(f'{image_path}/**/*.jpg', recursive=True)
 
-    def compute_gradient(self, model, optimizer, x, y_true):
+    def compute_gradient(self, model, optimizer, x, y_true, ignore_threshold):
         with tf.GradientTape() as tape:
             y_pred = model(x, training=True)
             loss = tf.reduce_mean(tf.square(y_true - y_pred))
+            if loss < ignore_threshold:
+                loss = 0.0
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return loss
@@ -96,21 +98,20 @@ class LSGAN:
         print('start training')
         iteration_count = 0
         os.makedirs(self.checkpoint_path, exist_ok=True)
-        d_lr = self.lr * self.discriminator_weight
         g_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
-        d_optimizer = tf.keras.optimizers.RMSprop(lr=d_lr)
+        d_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
         compute_gradient_d = tf.function(self.compute_gradient)
         compute_gradient_g = tf.function(self.compute_gradient)
-        g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, policy='step')
-        d_lr_scheduler = LRScheduler(lr=d_lr, iterations=self.iterations, policy='step')
+        g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='step')
+        d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='step')
         while True:
             for dx, dy, gx, gy in self.train_data_generator:
                 g_lr_scheduler.update(g_optimizer, iteration_count)
                 d_lr_scheduler.update(d_optimizer, iteration_count)
                 self.d_model.trainable = True
-                d_loss = compute_gradient_d(self.d_model, d_optimizer, dx, dy)
+                d_loss = compute_gradient_d(self.d_model, d_optimizer, dx, dy, self.d_loss_ignore_threshold)
                 self.d_model.trainable = False
-                g_loss = compute_gradient_g(self.gan, g_optimizer, gx, gy)
+                g_loss = compute_gradient_g(self.gan, g_optimizer, gx, gy, 0.0)
                 iteration_count += 1
                 print(self.build_loss_str(iteration_count, d_loss, g_loss))
                 if self.training_view:
