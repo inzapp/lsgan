@@ -155,14 +155,6 @@ class LSGAN:
         generated_images = DataGenerator.denormalize(y).reshape((split_size * split_size,) + self.generate_shape)
         return generated_images
 
-    def predict(self, img):
-        img = DataGenerator.resize(img, (self.generate_shape[1], self.generate_shape[0]))
-        x = np.asarray(img).reshape((1,) + self.generate_shape)
-        x = DataGenerator.normalize(x)
-        y = np.asarray(self.graph_forward(self.gan, x)[0]).reshape(self.generate_shape)
-        decoded_img = DataGenerator.denormalize(y)
-        return img, decoded_img
-
     def show_interpolation(self, frame=100):
         space = np.linspace(-1.0, 1.0, frame)
         for val in space:
