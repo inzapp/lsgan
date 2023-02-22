@@ -39,6 +39,7 @@ class DataGenerator:
         self.dtype = dtype
         self.pool = ThreadPoolExecutor(8)
         self.img_index = 0
+        np.random.shuffle(self.image_paths)
 
     def __len__(self):
         return int(np.floor(len(self.image_paths) / self.batch_size))
