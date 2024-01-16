@@ -3,7 +3,8 @@
 *.caffemodel
 *.prototxt
 *.swp
+*.bak
 .idea/
 __pycache__/
-checkpoints/
+checkpoint/
 cscope.*
