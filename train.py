@@ -54,8 +54,8 @@ if __name__ == '__main__':
     if args.d_model != '':
         config.pretrained_d_model_path = args.d_model
     lsgan = LSGAN(config=config)
-    if args.generate or args.generate_image_grid:
-        lsgan.generate(save_count=args.save_count, save_grid_image=args.generate_image_grid, grid_size=args.grid_size)
+    if args.generate:
+        lsgan.generate(save_count=args.save_count, save_grid_image=args.grid, grid_size=args.grid_size)
     else:
         lsgan.train()
 
