@@ -46,7 +46,6 @@ class LSGAN:
                  save_interval=2000,
                  iterations=100000,
                  view_grid_size=4,
-                 d_loss_ignore_threshold=0.1,
                  checkpoint_path='checkpoint',
                  training_view=False):
         assert generate_shape[2] in [1, 3]
@@ -58,7 +57,6 @@ class LSGAN:
         self.iterations = iterations
         self.view_grid_size = view_grid_size
         self.training_view = training_view
-        self.d_loss_ignore_threshold = d_loss_ignore_threshold
         self.checkpoint_path = checkpoint_path
         self.live_view_previous_time = time()
 
@@ -76,12 +74,10 @@ class LSGAN:
     def init_image_paths(self, image_path):
         return glob(f'{image_path}/**/*.jpg', recursive=True)
 
-    def compute_gradient(self, model, optimizer, x, y_true, ignore_threshold):
+    def compute_gradient(self, model, optimizer, x, y_true):
         with tf.GradientTape() as tape:
             y_pred = model(x, training=True)
             loss = tf.reduce_mean(tf.square(y_true - y_pred))
-            if loss < ignore_threshold:
-                loss = 0.0
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return loss
@@ -110,10 +106,10 @@ class LSGAN:
                 g_lr_scheduler.update(g_optimizer, iteration_count)
                 d_lr_scheduler.update(d_optimizer, iteration_count)
                 self.d_model.trainable = True
-                d_loss = compute_gradient_d(self.d_model, d_optimizer, dx, dy, self.d_loss_ignore_threshold)
+                d_loss = compute_gradient_d(self.d_model, d_optimizer, dx, dy)
                 d_losses.append(d_loss)
                 self.d_model.trainable = False
-                g_loss = compute_gradient_g(self.gan, g_optimizer, gx, gy, 0.0)
+                g_loss = compute_gradient_g(self.gan, g_optimizer, gx, gy)
                 g_losses.append(g_loss)
                 iteration_count += 1
                 print(self.build_loss_str(iteration_count, d_loss, g_loss))
