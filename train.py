@@ -24,10 +24,12 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-from lsgan import LSGAN
+import argparse
+
+from lsgan import LSGAN, TrainingConfig
 
 if __name__ == '__main__':
-    LSGAN(
+    config = TrainingConfig(
         train_image_path=r'/train_data/mnist/train/',
         model_name='model',
         generate_shape=(32, 32, 1),
@@ -37,5 +39,23 @@ if __name__ == '__main__':
         view_grid_size=5,
         save_interval=2000,
         iterations=10000,
-        training_view=False).train()
+        training_view=False)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--g-model', type=str, default='', help='pretrained generator model path')
+    parser.add_argument('--d-model', type=str, default='', help='pretrained discriminator model path')
+    parser.add_argument('--generate', action='store_true', help='generate image using pretrained generator model')
+    parser.add_argument('--grid', action='store_true', help='generate image grid using pretrained generator model')
+    parser.add_argument('--save-count', type=int, default=0, help='count for save images')
+    parser.add_argument('--grid-size', type=str, default='auto', help='square grid size for grid image saving')
+    args = parser.parse_args()
+    if args.g_model != '':
+        config.pretrained_g_model_path = args.g_model
+    if args.d_model != '':
+        config.pretrained_d_model_path = args.d_model
+    lsgan = LSGAN(config=config)
+    if args.generate or args.generate_image_grid:
+        lsgan.generate(save_count=args.save_count, save_grid_image=args.generate_image_grid, grid_size=args.grid_size)
+    else:
+        lsgan.train()
 

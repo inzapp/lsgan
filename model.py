@@ -52,13 +52,23 @@ class Model:
         self.latent_rows = generate_shape[0] // 16
         self.latent_cols = generate_shape[1] // 16
 
-    def build(self):
+    def build(self, g_model=None, d_model=None):
         assert self.generate_shape[0] % 32 == 0 and self.generate_shape[1] % 32 == 0
         assert self.generate_shape[0] <= 256 and self.generate_shape[1] <= 256
-        g_input, g_output = self.build_g(bn=True)
-        d_input, d_output = self.build_d(bn=False)
-        self.g_model = tf.keras.models.Model(g_input, g_output)
-        self.d_model = tf.keras.models.Model(d_input, d_output)
+        if g_model is None:
+            g_input, g_output = self.build_g(bn=True)
+            self.g_model = tf.keras.models.Model(g_input, g_output)
+        else:
+            g_input, g_output = g_model.input, g_model.output
+            self.g_model = g_model
+
+        if d_model is None:
+            d_input, d_output = self.build_d(bn=False)
+            self.d_model = tf.keras.models.Model(d_input, d_output)
+        else:
+            d_input, d_output = d_model.input, d_model.output
+            self.d_model = d_model
+
         gan_output = self.d_model(g_output)
         self.gan = tf.keras.models.Model(g_input, gan_output)
         return self.g_model, self.d_model, self.gan
