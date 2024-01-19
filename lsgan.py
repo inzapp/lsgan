@@ -32,6 +32,7 @@ import cv2
 from glob import glob
 from time import time
 from model import Model
+from eta import ETACalculator
 from lr_scheduler import LRScheduler
 from generator import DataGenerator
 
@@ -82,11 +83,11 @@ class LSGAN:
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return loss
 
-    def build_loss_str(self, iteration_count, d_loss, g_loss):
-        loss_str = f'[iteration_count : {iteration_count:6d}]'
-        loss_str += f' d_loss: {d_loss:>8.4f}'
-        loss_str += f', g_loss: {g_loss:>8.4f}'
-        return loss_str
+    def print_loss(self, progress_str, d_loss, g_loss):
+        loss_str = f'\r{progress_str}'
+        loss_str += f' discriminator_loss: {d_loss:>8.4f}'
+        loss_str += f', generator_loss: {g_loss:>8.4f}'
+        print(loss_str, end='')
 
     def train(self):
         self.model.summary()
@@ -100,6 +101,8 @@ class LSGAN:
         compute_gradient_g = tf.function(self.compute_gradient)
         g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
         d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
+        eta_calculator = ETACalculator(iterations=self.iterations)
+        eta_calculator.start()
         g_losses, d_losses = [], []
         while True:
             for dx, dy, gx, gy in self.train_data_generator:
@@ -112,7 +115,8 @@ class LSGAN:
                 g_loss = compute_gradient_g(self.gan, g_optimizer, gx, gy)
                 g_losses.append(g_loss)
                 iteration_count += 1
-                print(self.build_loss_str(iteration_count, d_loss, g_loss))
+                progress_str = eta_calculator.update(iteration_count)
+                self.print_loss(progress_str, d_loss, g_loss)
                 if self.training_view:
                     self.training_view_function()
                 if iteration_count % self.save_interval == 0:
@@ -120,7 +124,6 @@ class LSGAN:
                     self.g_model.save(f'{model_path_without_extention}.h5', include_optimizer=False)
                     generated_images = self.generate_image_grid(grid_size=21 if self.latent_dim == 2 else 10)
                     cv2.imwrite(f'{model_path_without_extention}.jpg', generated_images)
-                    print(f'[iteration count : {iteration_count:6d}] model with generated images saved with {model_path_without_extention} h5 and jpg\n')
                 if iteration_count == self.iterations:
                     print('\n\ntrain end successfully')
                     # self.plot_loss(d_losses, g_losses, iteration_count)
