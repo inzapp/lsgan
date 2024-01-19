@@ -73,6 +73,8 @@ class TrainingConfig:
 class LSGAN(CheckpointManager):
     def __init__(self, config):
         super().__init__()
+        assert config.generate_shape[0] % 32 == 0
+        assert config.generate_shape[1] % 32 == 0
         assert config.generate_shape[2] in [1, 3]
         self.train_image_path = config.train_image_path
         self.generate_shape = config.generate_shape
