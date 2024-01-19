@@ -36,5 +36,5 @@ if __name__ == '__main__':
         view_grid_size=5,
         save_interval=2000,
         iterations=10000,
-        training_view=False).fit()
+        training_view=False).train()
 

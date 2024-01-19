@@ -88,7 +88,7 @@ class LSGAN:
         loss_str += f', g_loss: {g_loss:>8.4f}'
         return loss_str
 
-    def fit(self):
+    def train(self):
         self.model.summary()
         print(f'\ntrain on {len(self.train_image_paths)} samples.')
         print('start training')
