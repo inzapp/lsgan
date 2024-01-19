@@ -153,8 +153,8 @@ class LSGAN(CheckpointManager):
         print(f'\ntrain on {len(self.train_image_paths)} samples.')
         print('start training')
         iteration_count = 0
-        d_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
-        g_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
+        d_optimizer = tf.keras.optimizers.RMSprop(learning_rate=self.lr)
+        g_optimizer = tf.keras.optimizers.RMSprop(learning_rate=self.lr)
         compute_gradient_d = tf.function(self.compute_gradient)
         compute_gradient_g = tf.function(self.compute_gradient)
         g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
