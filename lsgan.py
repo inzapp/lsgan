@@ -98,20 +98,23 @@ class LSGAN:
         print('start training')
         iteration_count = 0
         os.makedirs(self.checkpoint_path, exist_ok=True)
-        g_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
         d_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
+        g_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
         compute_gradient_d = tf.function(self.compute_gradient)
         compute_gradient_g = tf.function(self.compute_gradient)
-        g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='step')
-        d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='step')
+        g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
+        d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
+        g_losses, d_losses = [], []
         while True:
             for dx, dy, gx, gy in self.train_data_generator:
                 g_lr_scheduler.update(g_optimizer, iteration_count)
                 d_lr_scheduler.update(d_optimizer, iteration_count)
                 self.d_model.trainable = True
                 d_loss = compute_gradient_d(self.d_model, d_optimizer, dx, dy, self.d_loss_ignore_threshold)
+                d_losses.append(d_loss)
                 self.d_model.trainable = False
                 g_loss = compute_gradient_g(self.gan, g_optimizer, gx, gy, 0.0)
+                g_losses.append(g_loss)
                 iteration_count += 1
                 print(self.build_loss_str(iteration_count, d_loss, g_loss))
                 if self.training_view:
@@ -124,12 +127,25 @@ class LSGAN:
                     print(f'[iteration count : {iteration_count:6d}] model with generated images saved with {model_path_without_extention} h5 and jpg\n')
                 if iteration_count == self.iterations:
                     print('\n\ntrain end successfully')
-                    while True:
-                        generated_images = self.generate_image_grid(grid_size=self.view_grid_size)
-                        cv2.imshow('generated_images', generated_images)
-                        key = cv2.waitKey(0)
-                        if key == 27:
-                            exit(0)
+                    # self.plot_loss(d_losses, g_losses, iteration_count)
+                    exit(0)
+
+    def plot_loss(self, d_losses, g_losses, iteration_count):
+        from matplotlib import pyplot as plt
+        fig, ax1 = plt.subplots(figsize=(12,6))
+        ax2 = ax1.twinx()
+        x = range(iteration_count)
+
+        g_losses = np.clip(np.array(g_losses).astype('float32'), -0.1, 1.1)
+        d_losses = np.clip(np.array(d_losses).astype('float32'), -0.1, 1.1)
+
+        ax1.plot(x, g_losses, 'g-', label='g_loss')
+        ax2.plot(x, d_losses, 'b-', label='b_loss')
+
+        fig.legend(loc="upper right")
+        ax1.set_xlabel('Iteration')
+        plt.grid()
+        plt.show()
 
     @staticmethod
     @tf.function
