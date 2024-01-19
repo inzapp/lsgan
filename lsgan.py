@@ -128,7 +128,7 @@ class LSGAN:
 
     def plot_loss(self, d_losses, g_losses, iteration_count):
         from matplotlib import pyplot as plt
-        fig, ax1 = plt.subplots(figsize=(12,6))
+        fig, ax1 = plt.subplots(figsize=(10, 6))
         ax2 = ax1.twinx()
         x = range(iteration_count)
 
@@ -140,6 +140,7 @@ class LSGAN:
 
         fig.legend(loc="upper right")
         ax1.set_xlabel('Iteration')
+        plt.tight_layout(pad=0.5)
         plt.grid()
         plt.show()
 
