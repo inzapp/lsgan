@@ -25,7 +25,10 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+import warnings
 import numpy as np
+import silence_tensorflow.auto
 import tensorflow as tf
 
 import cv2
@@ -62,11 +65,15 @@ class LSGAN(CheckpointManager):
         self.training_view = training_view
         self.live_view_previous_time = time()
         self.set_model_name(model_name)
+        warnings.filterwarnings(action='ignore')
 
         self.model = Model(generate_shape=generate_shape, latent_dim=self.latent_dim)
         self.g_model, self.d_model, self.gan = self.model.build()
 
         self.train_image_paths = self.init_image_paths(train_image_path)
+        if len(self.train_image_paths) == 0:
+            print(f'no images found in {self.train_image_path}')
+            exit(0)
         self.train_data_generator = DataGenerator(
             generator=self.g_model,
             image_paths=self.train_image_paths,
