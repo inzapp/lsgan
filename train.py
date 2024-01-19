@@ -30,10 +30,10 @@ if __name__ == '__main__':
     LSGAN(
         train_image_path=r'/train_data/mnist/train/',
         generate_shape=(32, 32, 1),
-        lr=1e-3,
+        lr=0.001,
         batch_size=32,
-        latent_dim=32,
-        view_grid_size=15,
+        latent_dim=128,
+        view_grid_size=5,
         save_interval=2000,
         iterations=10000,
         training_view=False).fit()
