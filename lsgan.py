@@ -33,11 +33,12 @@ from glob import glob
 from time import time
 from model import Model
 from eta import ETACalculator
-from lr_scheduler import LRScheduler
 from generator import DataGenerator
+from lr_scheduler import LRScheduler
+from ckpt_manager import CheckpointManager
 
 
-class LSGAN:
+class LSGAN(CheckpointManager):
     def __init__(self,
                  train_image_path,
                  generate_shape=(32, 32, 1),
@@ -47,8 +48,9 @@ class LSGAN:
                  save_interval=2000,
                  iterations=100000,
                  view_grid_size=4,
-                 checkpoint_path='checkpoint',
+                 model_name='model',
                  training_view=False):
+        super().__init__()
         assert generate_shape[2] in [1, 3]
         self.generate_shape = generate_shape
         self.lr = lr
@@ -58,8 +60,8 @@ class LSGAN:
         self.iterations = iterations
         self.view_grid_size = view_grid_size
         self.training_view = training_view
-        self.checkpoint_path = checkpoint_path
         self.live_view_previous_time = time()
+        self.set_model_name(model_name)
 
         self.model = Model(generate_shape=generate_shape, latent_dim=self.latent_dim)
         self.g_model, self.d_model, self.gan = self.model.build()
@@ -94,13 +96,13 @@ class LSGAN:
         print(f'\ntrain on {len(self.train_image_paths)} samples.')
         print('start training')
         iteration_count = 0
-        os.makedirs(self.checkpoint_path, exist_ok=True)
         d_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
         g_optimizer = tf.keras.optimizers.RMSprop(lr=self.lr)
         compute_gradient_d = tf.function(self.compute_gradient)
         compute_gradient_g = tf.function(self.compute_gradient)
         g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
         d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
+        self.init_checkpoint_dir()
         eta_calculator = ETACalculator(iterations=self.iterations)
         eta_calculator.start()
         g_losses, d_losses = [], []
@@ -120,7 +122,7 @@ class LSGAN:
                 if self.training_view:
                     self.training_view_function()
                 if iteration_count % self.save_interval == 0:
-                    model_path_without_extention = f'{self.checkpoint_path}/generator_{iteration_count}_iter' 
+                    model_path_without_extention = f'{self.checkpoint_path}/generator_{iteration_count}_iter'
                     self.g_model.save(f'{model_path_without_extention}.h5', include_optimizer=False)
                     generated_images = self.generate_image_grid(grid_size=21 if self.latent_dim == 2 else 10)
                     cv2.imwrite(f'{model_path_without_extention}.jpg', generated_images)

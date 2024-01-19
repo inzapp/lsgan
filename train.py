@@ -29,6 +29,7 @@ from lsgan import LSGAN
 if __name__ == '__main__':
     LSGAN(
         train_image_path=r'/train_data/mnist/train/',
+        model_name='model',
         generate_shape=(32, 32, 1),
         lr=0.001,
         batch_size=32,
