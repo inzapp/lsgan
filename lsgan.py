@@ -90,6 +90,7 @@ class LSGAN(CheckpointManager):
         self.training_view = config.training_view
 
         self.set_model_name(self.model_name)
+        self.live_view_previous_time = time()
         warnings.filterwarnings(action='ignore')
 
         if self.pretrained_g_model_path == '' and self.pretrained_d_model_path == '':
