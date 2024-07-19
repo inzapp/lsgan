@@ -28,15 +28,13 @@ class DataGenerator:
                  image_paths,
                  generate_shape,
                  batch_size,
-                 latent_dim,
-                 dtype='float32'):
+                 latent_dim):
         self.generator = generator
         self.image_paths = image_paths
         self.generate_shape = generate_shape
         self.batch_size = batch_size
         self.half_batch_size = batch_size // 2
         self.latent_dim = latent_dim
-        self.dtype = dtype
         self.pool = ThreadPoolExecutor(8)
         self.img_index = 0
         np.random.shuffle(self.image_paths)
@@ -55,11 +53,11 @@ class DataGenerator:
             img = self.resize(img, (self.generate_shape[1], self.generate_shape[0]))
             x = self.normalize(np.asarray(img).reshape(self.generate_shape))
             real_dx.append(x)
-        real_dx = np.asarray(real_dx).astype(self.dtype)
+        real_dx = np.asarray(real_dx).astype(np.float32)
         real_dy = np.ones((self.half_batch_size, 1), dtype=np.float32)
         fake_dy = np.zeros((self.half_batch_size, 1), dtype=np.float32)
-        z = self.get_z_vector(size=self.half_batch_size * self.latent_dim).reshape((self.half_batch_size, self.latent_dim)).astype(self.dtype)
-        fake_dx = np.asarray(LSGAN.graph_forward(model=self.generator, x=z)).reshape((self.half_batch_size,) + self.generate_shape).astype(self.dtype)
+        z = self.get_z_vector(size=self.half_batch_size * self.latent_dim).reshape((self.half_batch_size, self.latent_dim)).astype(np.float32)
+        fake_dx = np.asarray(LSGAN.graph_forward(model=self.generator, x=z)).reshape((self.half_batch_size,) + self.generate_shape).astype(np.float32)
         dx = np.append(real_dx, fake_dx, axis=0)
         dy = np.append(real_dy, fake_dy, axis=0)
         gx = z
@@ -68,11 +66,11 @@ class DataGenerator:
 
     @staticmethod
     def normalize(x):
-        return np.clip((np.asarray(x).astype('float32') - 127.5) / 127.5, -1.0, 1.0)
+        return np.clip((np.asarray(x).astype(np.float32) - 127.5) / 127.5, -1.0, 1.0)
 
     @staticmethod
     def denormalize(x):
-        return np.asarray(np.clip((x * 127.5) + 127.5, 0.0, 255.0)).astype('uint8')
+        return np.asarray(np.clip((np.clip(x, -1.0, 1.0) * 127.5) + 127.5, 0.0, 255.0)).astype(np.uint8)
 
     @staticmethod
     def get_z_vector(size):

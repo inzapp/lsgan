@@ -158,8 +158,8 @@ class LSGAN(CheckpointManager):
         g_optimizer = tf.keras.optimizers.RMSprop(learning_rate=self.lr)
         compute_gradient_d = tf.function(self.compute_gradient)
         compute_gradient_g = tf.function(self.compute_gradient)
-        g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
-        d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.0, policy='onecycle')
+        g_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.01, policy='onecycle')
+        d_lr_scheduler = LRScheduler(lr=self.lr, iterations=self.iterations, warm_up=0.01, policy='onecycle')
         self.init_checkpoint_dir()
         eta_calculator = ETACalculator(iterations=self.iterations)
         eta_calculator.start()
@@ -195,8 +195,8 @@ class LSGAN(CheckpointManager):
         ax2 = ax1.twinx()
         x = range(iteration_count)
 
-        g_losses = np.clip(np.array(g_losses).astype('float32'), -0.1, 1.1)
-        d_losses = np.clip(np.array(d_losses).astype('float32'), -0.1, 1.1)
+        g_losses = np.clip(np.array(g_losses).astype(np.float32), -0.1, 1.1)
+        d_losses = np.clip(np.array(d_losses).astype(np.float32), -0.1, 1.1)
 
         ax1.plot(x, g_losses, 'g-', label='g_loss')
         ax2.plot(x, d_losses, 'b-', label='b_loss')
@@ -251,7 +251,7 @@ class LSGAN(CheckpointManager):
         for i in range(split_size):
             for j in range(split_size):
                 z.append([space[i], space[j]])
-        z = np.asarray(z).reshape((split_size * split_size, 2)).astype('float32')
+        z = np.asarray(z).reshape((split_size * split_size, 2)).astype(np.float32)
         y = np.asarray(self.graph_forward(self.g_model, z))
         generated_images = DataGenerator.denormalize(y).reshape((split_size * split_size,) + self.generate_shape)
         return generated_images
@@ -262,7 +262,7 @@ class LSGAN(CheckpointManager):
             z = np.zeros(shape=(1, self.latent_dim), dtype=np.float32) + val
             y = np.asarray(self.graph_forward(self.g_model, z))[0]
             y = DataGenerator.denormalize(y)
-            generated_image = np.clip(np.asarray(y).reshape(self.generate_shape), 0.0, 255.0).astype('uint8')
+            generated_image = np.clip(np.asarray(y).reshape(self.generate_shape), 0.0, 255.0).astype(np.uint8)
             cv2.imshow('interpolation', generated_image)
             key = cv2.waitKey(10)
             if key == 27:

@@ -85,7 +85,7 @@ class Model:
         x = self.conv2d_transpose(x, 256, 4, 1, activation='leaky', bn=bn)
         x = self.conv2d_transpose(x, 128, 4, 2, activation='leaky', bn=bn)
         x = self.conv2d_transpose(x,  64, 4, 2, activation='leaky', bn=bn)
-        g_output = self.conv2d_transpose(x, self.generate_shape[-1], 1, 1, activation='tanh', bn=False)
+        g_output = self.conv2d_transpose(x, self.generate_shape[-1], 1, 1, activation='linear', bn=False)
         return g_input, g_output
 
     def build_d(self, bn):
@@ -140,13 +140,15 @@ class Model:
         return tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.02)
 
     def weight_clipping_constraint(self, clip_value=0.01):
-        return WeightClipping(clip_value=clip_value)
+        # return WeightClipping(clip_value=clip_value)
+        return None
 
     def activation(self, x, activation):
-        if activation == 'leaky':
-            x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
-        else:
-            x = tf.keras.layers.Activation(activation=activation)(x)
+        if activation != 'linear':
+            if activation == 'leaky':
+                x = tf.keras.layers.LeakyReLU(alpha=0.2)(x)
+            else:
+                x = tf.keras.layers.Activation(activation=activation)(x)
         return x
 
     def reshape(self, x, target_shape):
